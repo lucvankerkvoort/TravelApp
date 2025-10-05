@@ -1,0 +1,246 @@
+import { makeStyles } from "tss-react/mui";
+
+export const useAppStyles = makeStyles()(() => ({
+  appShell: {
+    width: "100vw",
+    height: "100vh",
+    margin: 0,
+    background: "radial-gradient(circle at 20% 20%, #0e1a2b, #02040a 70%)",
+    color: "#f8fafc",
+    fontFamily:
+      "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  },
+  viewerShell: {
+    position: "relative",
+    width: "100%",
+    height: "100%",
+  },
+  overlay: {
+    position: "absolute",
+    top: "1.5rem",
+    left: "1.5rem",
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem",
+    width: "24rem",
+    maxWidth: "90vw",
+    zIndex: 10,
+  },
+  searchForm: {
+    display: "flex",
+    gap: "0.5rem",
+    alignItems: "center",
+    background:
+      "linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(45, 55, 72, 0.55))",
+    borderRadius: "1rem",
+    padding: "0.85rem",
+    boxShadow: "0 18px 38px rgba(8, 47, 73, 0.45)",
+    backdropFilter: "blur(18px)",
+    border: "1px solid rgba(148, 163, 184, 0.28)",
+  },
+  searchInput: {
+    flex: 1,
+    "& .MuiOutlinedInput-root": {
+      borderRadius: "0.85rem",
+      backgroundColor: "rgba(15, 23, 42, 0.55)",
+      transition:
+        "border-color 160ms ease, box-shadow 160ms ease, background 160ms ease",
+      color: "#f8fafc",
+      "& fieldset": {
+        borderColor: "transparent",
+      },
+      "&:hover fieldset": {
+        borderColor: "rgba(148, 163, 184, 0.35)",
+      },
+      "&.Mui-focused": {
+        backgroundColor: "rgba(15, 23, 42, 0.72)",
+        boxShadow: "0 12px 28px rgba(14, 165, 233, 0.3)",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "rgba(125, 211, 252, 0.65)",
+      },
+    },
+    "& .MuiOutlinedInput-input": {
+      padding: "0.65rem 1rem",
+      fontSize: "0.98rem",
+      color: "#f8fafc",
+      "&::placeholder": {
+        color: "rgba(203, 213, 225, 0.65)",
+        opacity: 1,
+      },
+    },
+  },
+  searchButton: {
+    padding: "0.65rem 1.2rem",
+    fontSize: "0.98rem",
+    borderRadius: "0.85rem",
+    background: "linear-gradient(135deg, #8b5cf6, #3b82f6)",
+    color: "#0b1120",
+    fontWeight: 600,
+    cursor: "pointer",
+    textTransform: "none",
+    boxShadow: "0 18px 30px rgba(88, 101, 242, 0.35)",
+    transition:
+      "transform 160ms ease, filter 160ms ease, box-shadow 160ms ease",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      filter: "brightness(1.08)",
+      boxShadow: "0 22px 36px rgba(99, 102, 241, 0.45)",
+    },
+    "&.Mui-disabled": {
+      cursor: "not-allowed",
+      filter: "grayscale(0.3)",
+      opacity: 0.65,
+    },
+  },
+  feedback: {
+    margin: 0,
+    marginLeft: "0.5rem",
+    color: "#a5b4fc",
+    fontSize: "0.85rem",
+  },
+  sidebarCard: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem",
+    background:
+      "linear-gradient(160deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.72))",
+    borderRadius: "1.25rem",
+    padding: "1.35rem",
+    boxShadow: "0 26px 50px rgba(2, 6, 23, 0.55)",
+    border: "1px solid rgba(148, 163, 184, 0.2)",
+    maxHeight: "65vh",
+    overflow: "hidden",
+  },
+  cityHeader: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.35rem",
+  },
+  cityTitle: {
+    margin: 0,
+    fontSize: "1.5rem",
+    fontWeight: 700,
+    color: "#c4cfff",
+  },
+  citySubtitle: {
+    margin: 0,
+    fontSize: "0.95rem",
+    color: "#cbd5f5",
+  },
+  cityBlurb: {
+    margin: 0,
+    fontSize: "0.95rem",
+    color: "#e2e8f0",
+    lineHeight: 1.5,
+  },
+  section: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.75rem",
+    overflow: "auto",
+    paddingRight: "0.35rem",
+  },
+  sectionTitle: {
+    margin: 0,
+    fontSize: "0.95rem",
+    fontWeight: 700,
+    color: "#c4cfff",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+  },
+  sectionSubtitle: {
+    margin: "0 0 0.4rem",
+    fontSize: "0.9rem",
+    fontWeight: 600,
+    color: "#f8fafc",
+  },
+  listColumn: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.5rem",
+    overflowY: "auto",
+    maxHeight: "30vh",
+    paddingRight: "0.35rem",
+    scrollBehavior: "smooth",
+    scrollbarWidth: "thin",
+    scrollbarColor: "rgba(148, 163, 184, 0.4) transparent",
+    "&::-webkit-scrollbar": {
+      width: "6px",
+    },
+    "&::-webkit-scrollbar-thumb": {
+      backgroundColor: "rgba(148, 163, 184, 0.35)",
+      borderRadius: "999px",
+    },
+  },
+  listButton: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: "0.2rem",
+    padding: "0.85rem 1rem",
+    borderRadius: "1rem",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "rgba(148, 163, 184, 0.18)",
+    backgroundColor: "rgba(15, 23, 42, 0.55)",
+    color: "#f8fafc",
+    cursor: "pointer",
+    textTransform: "none",
+    transition:
+      "border-color 150ms ease, background 200ms ease, transform 160ms ease",
+    outline: "none",
+    "&:hover": {
+      borderColor: "rgba(125, 211, 252, 0.5)",
+      backgroundColor: "rgba(15, 23, 42, 0.7)",
+      transform: "translateY(-1px)",
+    },
+    "&.Mui-focusVisible": {
+      borderColor: "rgba(125, 211, 252, 0.85)",
+      boxShadow: "0 0 0 2px rgba(56, 189, 248, 0.25)",
+    },
+  },
+  listButtonActive: {
+    borderColor: "rgba(125, 211, 252, 0.85)",
+    background:
+      "linear-gradient(135deg, rgba(56, 189, 248, 0.55), rgba(129, 140, 248, 0.38))",
+    transform: "translateY(-1.5px) scale(1.02)",
+    boxShadow: "0 16px 30px rgba(56, 189, 248, 0.25)",
+  },
+  listButtonTitle: {
+    fontSize: "0.98rem",
+    fontWeight: 700,
+    letterSpacing: "0.01em",
+  },
+  listButtonSubtitle: {
+    fontSize: "0.82rem",
+    color: "#cbd5f5",
+    letterSpacing: "0.01em",
+  },
+  bulletList: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.5rem",
+  },
+  bulletItem: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.2rem",
+    padding: "0.6rem 0.7rem",
+    borderRadius: "0.6rem",
+    backgroundColor: "rgba(30, 41, 59, 0.7)",
+  },
+  bulletMeta: {
+    fontSize: "0.8rem",
+    color: "#cbd5f5",
+  },
+  listItemPrimary: {
+    fontSize: "0.95rem",
+    fontWeight: 600,
+    color: "#f8fafc",
+    display: "block",
+  },
+}));

@@ -1,0 +1,34 @@
+{
+  "name": "my-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "pnpm --dir client build",
+    "preview": "pnpm --dir client preview",
+    "dev:server": "pnpm --dir server dev",
+    "start:server": "pnpm --dir server start",
+    "redis:start": "bash -lc 'docker rm -f redis-local >/dev/null 2>&1 || true && docker run --rm --name redis-local -p 6379:6379 redis:7-alpine'",
+    "dev:all": "concurrently \"pnpm redis:auto\" \"pnpm dev\" \"pnpm dev:server\"",
+    "dev": "pnpm redis:auto && concurrently \"pnpm --dir server dev\" \"pnpm --dir client dev\"",
+    "redis:auto": "./scripts/start-redis.sh",
+    "redis:stop": "docker stop redis-local",
+    "redis:rm": "docker rm -f redis-local"
+  },
+  "devDependencies": {
+    "@types/ioredis": "^5.0.0",
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.1",
+  "dependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "ioredis": "^5.8.0",
+    "openai": "^6.1.0",
+    "ts-node": "^10.9.2",
+    "zod": "^4.1.11"
+  }
+}

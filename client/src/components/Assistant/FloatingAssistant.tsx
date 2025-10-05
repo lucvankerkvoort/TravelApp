@@ -23,12 +23,6 @@ interface ChatMessage {
   content: string;
 }
 
-interface StreamPayload {
-  event: "token" | "done" | "error";
-  content?: string;
-  message?: string;
-}
-
 const defaultMessages: ChatMessage[] = [
   {
     id: "assistant-seed",
@@ -47,7 +41,7 @@ const FloatingAssistant = () => {
   const [error, setError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const ensureConversationId = useCallback(() => {
     if (conversationId) return conversationId;
@@ -77,7 +71,7 @@ const FloatingAssistant = () => {
         messages: Array<{ role: "user" | "assistant"; content: string }>;
       };
       if (data.messages.length) {
-        const normalized = data.messages.map((msg, idx) => ({
+        const normalized = data.messages.map((msg) => ({
           id: crypto.randomUUID(),
           role: msg.role,
           content: msg.content,
@@ -103,111 +97,96 @@ const FloatingAssistant = () => {
     }
   }, [messages, isOpen]);
 
+  useEffect(
+    () => () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    },
+    []
+  );
+
   const handleToggle = () => {
-    setIsOpen((prev) => !prev);
     setError(null);
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (prev && eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+        setIsStreaming(false);
+      }
+      return next;
+    });
   };
 
   const handleClose = () => {
-    if (abortRef.current) {
-      abortRef.current.abort();
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+      setIsStreaming(false);
     }
     setIsOpen(false);
   };
 
-  const streamAssistant = useCallback(async (id: string, prompt: string) => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setIsStreaming(true);
+  const streamAssistant = useCallback(
+    (sessionId: string, assistantMessageId: string) => {
+      eventSourceRef.current?.close();
+      const es = new EventSource(`/api/chat/events/${sessionId}`);
+      eventSourceRef.current = es;
+      setIsStreaming(true);
 
-    try {
-      debugger;
-      const response = await fetch("/api/chat/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: id, message: prompt }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok || !response.body) {
-        throw new Error("Chat stream failed to start");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
       let assistantContent = "";
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const events = chunk.split("\n\n");
-        for (const event of events) {
-          if (!event.trim() || !event.startsWith("data:")) continue;
-          const payloadString = event.replace(/^data:\s*/, "").trim();
-          if (!payloadString) continue;
-          let payload: StreamPayload;
-          try {
-            payload = JSON.parse(payloadString) as StreamPayload;
-          } catch {
-            continue;
-          }
-          if (payload.event === "token" && payload.content) {
-            assistantContent += payload.content;
-            setMessages((prev) => {
-              const updated = [...prev];
-              const lastIndex = updated.length - 1;
-              if (lastIndex >= 0) {
-                updated[lastIndex] = {
-                  ...updated[lastIndex],
-                  content: assistantContent,
-                };
-              }
-              return updated;
-            });
-          }
-          if (payload.event === "error") {
-            setError(payload.message ?? "Assistant failed to respond");
-            setMessages((prev) => {
-              const updated = [...prev];
-              const lastIndex = updated.length - 1;
-              if (lastIndex >= 0) {
-                updated[lastIndex] = {
-                  ...updated[lastIndex],
-                  content:
-                    payload.message ??
-                    "Couldn't finish that thought. Try again soon.",
-                };
-              }
-              return updated;
-            });
-          }
-          if (payload.event === "done") {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const lastIndex = updated.length - 1;
-              if (lastIndex >= 0) {
-                updated[lastIndex] = {
-                  ...updated[lastIndex],
-                  content: assistantContent,
-                };
-              }
-              return updated;
-            });
-          }
+      const updateAssistantMessage = (content: string) => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId ? { ...msg, content } : msg
+          )
+        );
+      };
+
+      es.addEventListener("token", (event) => {
+        try {
+          const data = JSON.parse((event as MessageEvent).data) as {
+            content?: string;
+          };
+          if (!data?.content) return;
+          assistantContent += data.content;
+          updateAssistantMessage(assistantContent);
+        } catch (err) {
+          console.warn("Failed to parse token event", err);
         }
-      }
-    } catch (err) {
-      if ((err as Error).name !== "AbortError") {
-        console.error("Streaming error", err);
-        setError("Something went wrong. Try again in a moment.");
-      }
-    } finally {
-      setIsStreaming(false);
-      abortRef.current = null;
-    }
-  }, []);
+      });
+
+      es.addEventListener("done", () => {
+        updateAssistantMessage(assistantContent);
+        setIsStreaming(false);
+        es.close();
+        eventSourceRef.current = null;
+      });
+
+      es.addEventListener("error", (event) => {
+        try {
+          const data = JSON.parse((event as MessageEvent).data) as {
+            message?: string;
+          };
+          if (data?.message) {
+            setError(data.message);
+            updateAssistantMessage(data.message);
+          } else {
+            setError("Assistant failed to respond");
+          }
+        } catch {
+          setError("Assistant failed to respond");
+        }
+        setIsStreaming(false);
+        es.close();
+        eventSourceRef.current = null;
+      });
+    },
+    []
+  );
 
   const handleSend = async () => {
     if (!input.trim() || isStreaming) return;
@@ -216,14 +195,47 @@ const FloatingAssistant = () => {
     setError(null);
 
     const id = ensureConversationId();
+    const userMessageId = crypto.randomUUID();
+    const assistantMessageId = crypto.randomUUID();
 
     setMessages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), role: "user", content: text },
-      { id: crypto.randomUUID(), role: "assistant", content: "" },
+      { id: userMessageId, role: "user", content: text },
+      { id: assistantMessageId, role: "assistant", content: "" },
     ]);
 
-    await streamAssistant(id, text);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: id, message: text }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to start streaming session");
+      }
+
+      const data = (await response.json()) as { sessionId?: string };
+      if (!data.sessionId) {
+        throw new Error("Missing session id");
+      }
+
+      streamAssistant(data.sessionId, assistantMessageId);
+    } catch (err) {
+      console.error("Failed to initiate assistant", err);
+      setError("Could not talk to the assistant. Try again later.");
+      setIsStreaming(false);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content: "Could not reach the assistant. Please retry soon.",
+              }
+            : msg
+        )
+      );
+    }
   };
 
   const assistantPanel = useMemo(
@@ -392,16 +404,7 @@ const FloatingAssistant = () => {
         </Stack>
       </Paper>
     ),
-    [
-      error,
-      handleClose,
-      handleSend,
-      handleToggle,
-      input,
-      isStreaming,
-      messages,
-      isStreaming,
-    ]
+    [error, handleClose, handleSend, handleToggle, input, isStreaming, messages]
   );
 
   return (

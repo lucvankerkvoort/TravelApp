@@ -1,9 +1,10 @@
-import * as nodeCrypto from 'node:crypto';
+import * as nodeCrypto from "node:crypto";
+import { build } from "vite";
 
 const { createHash, webcrypto } = nodeCrypto;
 
 const toBuffer = (input) => {
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     return Buffer.from(input);
   }
 
@@ -27,7 +28,7 @@ const toBuffer = (input) => {
 };
 
 const applyHashPolyfill = (target) => {
-  if (!target || typeof target.hash === 'function') {
+  if (!target || typeof target.hash === "function") {
     return;
   }
 
@@ -46,4 +47,4 @@ if (!globalThis.crypto && webcrypto) {
   globalThis.crypto = webcrypto;
 }
 
-await import('vite/bin/vite.js');
+await build();

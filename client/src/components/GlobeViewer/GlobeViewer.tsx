@@ -9,7 +9,6 @@ import {
   Ion,
   VerticalOrigin,
   HeightReference,
-  Math as CesiumMath,
 } from "cesium";
 import { useCityExplorer } from "@/context/CityExplorerContext";
 import type { GeoapifyFeature } from "@/types/geoapify";

@@ -38,6 +38,7 @@ export type Landmark = {
   name: string;
   position: LatLng;
   kind?: string; // museum, viewpoint, etc.
+  description?: string;
 };
 
 export type Guide = {

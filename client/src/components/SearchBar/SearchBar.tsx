@@ -170,11 +170,12 @@ const SearchBar = () => {
               backdropFilter: "blur(16px)",
               border: "1px solid rgba(148, 163, 184, 0.25)",
               borderRadius: "1rem",
-              background: "linear-gradient(140deg, rgba(15,23,42,0.95), rgba(30,41,59,0.9))",
+              background:
+                "linear-gradient(140deg, rgba(15,23,42,0.95), rgba(30,41,59,0.9))",
             },
           },
         }}
-        onInputChange={(e, newVal) => {
+        onInputChange={(_, newVal) => {
           setInputValue(newVal);
           // setSearchQuery(newVal); // keep context in sync
         }}
@@ -184,7 +185,7 @@ const SearchBar = () => {
             void handleSearchSubmit(inputValue);
           }
         }}
-        onChange={(e, selected) => {
+        onChange={(_, selected) => {
           if (selected && typeof selected !== "string") {
             if (selected.position) {
               focusCoords(selected.position, { landmarkId: null });
@@ -212,15 +213,17 @@ const SearchBar = () => {
               ...params.InputProps,
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchRoundedIcon sx={{ color: "rgba(203, 213, 225, 0.7)" }} />
+                  <SearchRoundedIcon
+                    sx={{ color: "rgba(203, 213, 225, 0.7)" }}
+                  />
                 </InputAdornment>
               ),
               endAdornment: (
                 <InputAdornment position="end" sx={{ gap: 1 }}>
-              {optionsLoading ? (
-                <CircularProgress color="inherit" size={18} thickness={4} />
-              ) : null}
-              {params.InputProps.endAdornment}
+                  {optionsLoading ? (
+                    <CircularProgress color="inherit" size={18} thickness={4} />
+                  ) : null}
+                  {params.InputProps.endAdornment}
                 </InputAdornment>
               ),
             }}

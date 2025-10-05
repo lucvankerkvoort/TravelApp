@@ -14,6 +14,7 @@ import SendIcon from "@mui/icons-material/Send";
 import MinimizeIcon from "@mui/icons-material/Minimize";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiUrl } from "@/lib/api";
 
 const ASSISTANT_STORAGE_KEY = "city-explorer-assistant-conversation";
 
@@ -59,7 +60,7 @@ const FloatingAssistant = () => {
   const fetchHistory = useCallback(async () => {
     const id = ensureConversationId();
     try {
-      const res = await fetch(`/api/chat/${id}`);
+      const res = await fetch(apiUrl(`/api/chat/${id}`));
       if (res.status === 404) {
         setMessages(defaultMessages);
         return;
@@ -132,7 +133,9 @@ const FloatingAssistant = () => {
   const streamAssistant = useCallback(
     (sessionId: string, assistantMessageId: string) => {
       eventSourceRef.current?.close();
-      const es = new EventSource(`/api/chat/events/${sessionId}`);
+      const es = new EventSource(
+        apiUrl(`/api/chat/events/${sessionId}`)
+      );
       eventSourceRef.current = es;
       setIsStreaming(true);
 
@@ -205,7 +208,7 @@ const FloatingAssistant = () => {
     ]);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId: id, message: text }),

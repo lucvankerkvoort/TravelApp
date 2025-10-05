@@ -17,6 +17,7 @@ import {
   type Viewer as CesiumViewer,
 } from "cesium";
 import { GeoapifyFeatureSchema, type GeoapifyFeature } from "@/types/geoapify";
+import { apiUrl } from "@/lib/api";
 import type { LatLng, Guide, RouteLeg } from "@/types/models";
 
 type MarkerStyle = {
@@ -156,7 +157,7 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const res = await fetch(
-        `/api/places?query=${encodeURIComponent(trimmed)}`
+        apiUrl(`/api/places?query=${encodeURIComponent(trimmed)}`)
       );
       if (!res.ok) throw new Error("Failed to load landmarks");
       const payload = await res.json();
@@ -218,7 +219,7 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const res = await fetch(
-        `/api/guides?lat=${coords.lat}&lng=${coords.lng}`
+        apiUrl(`/api/guides?lat=${coords.lat}&lng=${coords.lng}`)
       );
       if (!res.ok) throw new Error("Failed to load guides");
       const data: Guide[] = await res.json();
@@ -240,7 +241,9 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
       setError(null);
       try {
         const res = await fetch(
-          `/api/route?start=${start.lat},${start.lng}&end=${end.lat},${end.lng}&mode=${mode}`
+          apiUrl(
+            `/api/route?start=${start.lat},${start.lng}&end=${end.lat},${end.lng}&mode=${mode}`
+          )
         );
         if (!res.ok) throw new Error("Failed to plan route");
         const data: RouteLeg = await res.json();

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "pnpm --dir client build",
+    "build": "pnpm --dir client build && pnpm --dir server build",
     "preview": "pnpm --dir client preview",
     "server-install": "pnpm --dir server install",
     "client-install": "pnpm --dir client install",
@@ -15,6 +15,7 @@
     "redis:start": "bash -lc 'docker rm -f redis-local >/dev/null 2>&1 || true && docker run --rm --name redis-local -p 6379:6379 redis:7-alpine'",
     "dev:all": "concurrently \"pnpm redis:auto\" \"pnpm dev\" \"pnpm dev:server\"",
     "dev": "pnpm redis:auto && concurrently \"pnpm --dir server dev\" \"pnpm --dir client dev\"",
+    "start": "concurrently \"pnpm --dir server start\" \"pnpm --dir client preview\"",
     "redis:auto": "./scripts/start-redis.sh",
     "redis:stop": "docker stop redis-local",
     "redis:rm": "docker rm -f redis-local"

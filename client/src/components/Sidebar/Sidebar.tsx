@@ -114,7 +114,6 @@ const Sidebar = () => {
   };
 
   const handleLandmarkFocus = (landmark: GeoapifyFeature) => {
-    debugger;
     setSelectedLandmarkId(landmark.properties.place_id);
     focusCoords(featureToLatLng(landmark), {
       height: 1600,

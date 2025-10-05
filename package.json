@@ -6,6 +6,10 @@
   "scripts": {
     "build": "pnpm --dir client build",
     "preview": "pnpm --dir client preview",
+    "server-install": "pnpm --dir server install",
+    "client-install": "pnpm --dir client install",
+    "install-all": "pnpm install && pnpm server-install && pnpm client-install",
+    "rei-all": "rm -rf node_modules && rm -rf server/node_modules && rm -rf client/node_modules && pnpm install && pnpm server-install && pnpm client-install",
     "dev:server": "pnpm --dir server dev",
     "start:server": "pnpm --dir server start",
     "redis:start": "bash -lc 'docker rm -f redis-local >/dev/null 2>&1 || true && docker run --rm --name redis-local -p 6379:6379 redis:7-alpine'",

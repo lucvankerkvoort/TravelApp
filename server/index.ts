@@ -1,13 +1,13 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 
 import placesRouter from "./routes/places";
 import markerRouter from "./routes/marker";
 import chatRouter from "./routes/chat";
 
-dotenv.config();
-
+dotenv.config({ path: path.resolve(process.cwd(), "../.env") });
 const app = express();
 const PORT = process.env.PORT || 4000;
 

@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import express, { type Request, type Response } from "express";
 import OpenAI from "openai";
 import Redis from "ioredis";
@@ -24,17 +25,28 @@ const ensureRedisConnection = async () => {
 
 void ensureRedisConnection();
 
-const redisKey = (conversationId: string) => `chat:session:${conversationId}`;
-const REDIS_TTL_SECONDS = 60 * 60; // 1 hour
+const conversationKey = (conversationId: string) =>
+  `chat:conversation:${conversationId}`;
+const sessionKey = (sessionId: string) => `chat:session:${sessionId}`;
+
+const CONVERSATION_TTL_SECONDS = 60 * 60; // 1 hour
+const SESSION_TTL_SECONDS = 60 * 5; // 5 minutes
 
 const resolveOpenAIKey = () =>
   process.env.OPENAI_API_KEY ?? process.env.OPEN_AI_KEY ?? "";
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
+console.log({ openAiKey: resolveOpenAIKey() });
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+};
+
+type SessionPayload = {
+  conversationId: string;
+  history: ChatMessage[];
+  userMessage: ChatMessage;
 };
 
 const parseConversation = (raw: string | null): ChatMessage[] => {
@@ -54,46 +66,17 @@ const saveConversation = async (
 ): Promise<void> => {
   try {
     await redis.set(
-      redisKey(conversationId),
+      conversationKey(conversationId),
       JSON.stringify({ messages }),
       "EX",
-      REDIS_TTL_SECONDS
+      CONVERSATION_TTL_SECONDS
     );
   } catch (err) {
     console.warn("Failed to persist conversation", err);
   }
 };
 
-router.get("/:conversationId", async (req: Request, res: Response) => {
-  const { conversationId } = req.params;
-  if (!conversationId) {
-    return res.status(400).json({ error: "conversationId required" });
-  }
-
-  try {
-    const cached = await redis.get(redisKey(conversationId));
-    if (!cached) {
-      return res.status(404).json({ messages: [] });
-    }
-    const history = parseConversation(cached);
-    return res.json({ messages: history });
-  } catch (err) {
-    console.error("Failed to fetch conversation", err);
-    return res
-      .status(500)
-      .json({ error: "Unable to load conversation history" });
-  }
-});
-
-router.post("/stream", async (req: Request, res: Response) => {
-  const apiKey = resolveOpenAIKey();
-  debugger;
-  if (!apiKey) {
-    return res
-      .status(500)
-      .json({ error: "OPENAI_API_KEY must be configured on the server" });
-  }
-
+router.post("/", async (req: Request, res: Response) => {
   const { conversationId, message } = req.body as {
     conversationId?: string;
     message?: string;
@@ -105,6 +88,63 @@ router.post("/stream", async (req: Request, res: Response) => {
       .json({ error: "conversationId and message are required" });
   }
 
+  try {
+    const history = parseConversation(
+      await redis.get(conversationKey(conversationId))
+    ).slice(-20);
+
+    const userMessage: ChatMessage = {
+      role: "user",
+      content: message.trim(),
+    };
+
+    const sessionId = randomUUID();
+    const payload: SessionPayload = {
+      conversationId,
+      history,
+      userMessage,
+    };
+
+    await redis.set(
+      sessionKey(sessionId),
+      JSON.stringify(payload),
+      "EX",
+      SESSION_TTL_SECONDS
+    );
+
+    return res.json({ sessionId });
+  } catch (err) {
+    console.error("Failed to create chat session", err);
+    return res.status(500).json({ error: "Unable to start chat session" });
+  }
+});
+
+router.get("/events/:sessionId", async (req: Request, res: Response) => {
+  const apiKey = resolveOpenAIKey();
+  if (!apiKey) {
+    res.status(500);
+    res.write(
+      `event: error\ndata: ${JSON.stringify({
+        message: "OPENAI_API_KEY must be configured on the server",
+      })}\n\n`
+    );
+    return res.end();
+  }
+
+  const { sessionId } = req.params;
+  const sessionRaw = await redis.get(sessionKey(sessionId));
+  if (!sessionRaw) {
+    res.status(404);
+    res.write(
+      `event: error\ndata: ${JSON.stringify({
+        message: "Session not found",
+      })}\n\n`
+    );
+    return res.end();
+  }
+
+  const session = JSON.parse(sessionRaw) as SessionPayload;
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
@@ -115,13 +155,8 @@ router.post("/stream", async (req: Request, res: Response) => {
     aborted = true;
   });
 
-  const history = parseConversation(await redis.get(redisKey(conversationId)));
-  const trimmedHistory = history.slice(-20); // keep context lean
-  const userMessage: ChatMessage = { role: "user", content: message.trim() };
-
-  const messagesForModel = [...trimmedHistory, userMessage];
-
-  const sendEvent = (data: unknown) => {
+  const sendEvent = (event: string, data: unknown) => {
+    res.write(`event: ${event}\n`);
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
@@ -129,23 +164,20 @@ router.post("/stream", async (req: Request, res: Response) => {
     const client = new OpenAI({ apiKey });
     const stream = await client.chat.completions.create({
       model: OPENAI_MODEL,
-      messages: messagesForModel,
+      messages: [...session.history, session.userMessage],
       stream: true,
     });
 
     let assistantContent = "";
 
     for await (const part of stream) {
-      if (aborted) {
-        break;
-      }
+      if (aborted) break;
       const token = part.choices[0]?.delta?.content ?? "";
       if (token) {
         assistantContent += token;
-        sendEvent({ event: "token", content: token });
+        sendEvent("token", { content: token });
       }
-      const finishReason = part.choices[0]?.finish_reason;
-      if (finishReason === "stop") {
+      if (part.choices[0]?.finish_reason === "stop") {
         break;
       }
     }
@@ -155,21 +187,46 @@ router.post("/stream", async (req: Request, res: Response) => {
         role: "assistant",
         content: assistantContent,
       };
-      const updatedHistory = [...trimmedHistory, userMessage, assistantMessage];
-      await saveConversation(conversationId, updatedHistory);
-      sendEvent({ event: "done" });
+      const updatedHistory = [
+        ...session.history,
+        session.userMessage,
+        assistantMessage,
+      ];
+      await saveConversation(session.conversationId, updatedHistory);
+      sendEvent("done", {});
     }
   } catch (err) {
     console.error("Chat streaming failed", err);
-    sendEvent({
-      event: "error",
+    sendEvent("error", {
       message:
         err instanceof Error
           ? err.message
           : "OpenAI request failed unexpectedly",
     });
   } finally {
+    await redis.del(sessionKey(sessionId));
     res.end();
+  }
+});
+
+router.get("/:conversationId", async (req: Request, res: Response) => {
+  const { conversationId } = req.params;
+  if (!conversationId) {
+    return res.status(400).json({ error: "conversationId required" });
+  }
+
+  try {
+    const cached = await redis.get(conversationKey(conversationId));
+    if (!cached) {
+      return res.status(404).json({ messages: [] });
+    }
+    const history = parseConversation(cached);
+    return res.json({ messages: history });
+  } catch (err) {
+    console.error("Failed to fetch conversation", err);
+    return res
+      .status(500)
+      .json({ error: "Unable to load conversation history" });
   }
 });
 

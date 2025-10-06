@@ -1,6 +1,5 @@
 // routes/places.ts
 import express, { type Request, type Response } from "express";
-import fetch from "node-fetch";
 import { z } from "zod";
 import { createRedisClient } from "../redis";
 
@@ -8,7 +7,7 @@ import {
   GeoapifyFeatureCollectionSchema,
   GeoapifyFeatureSchema,
   type GeoapifyFeature,
-} from "../../shared/geoapify";
+} from "./types";
 
 const router = express.Router();
 
@@ -96,9 +95,7 @@ router.get("/", async (req: Request, res: Response) => {
         >;
         const valid =
           parsed &&
-          CATEGORY_CONFIG.every(
-            ({ key }) => Array.isArray(parsed[key])
-          );
+          CATEGORY_CONFIG.every(({ key }) => Array.isArray(parsed[key]));
         if (valid) {
           console.info("/places cache hit", { cacheKey });
           return res.json(parsed);
@@ -125,9 +122,8 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     const geoJson = (await geoRes.json()) as unknown;
-    const parsedGeo: GeoapifyGeocodeResponse = GeoapifyGeocodeSchema.parse(
-      geoJson
-    );
+    const parsedGeo: GeoapifyGeocodeResponse =
+      GeoapifyGeocodeSchema.parse(geoJson);
 
     const placeId = parsedGeo.features[0]?.properties.place_id;
     if (!placeId) {
@@ -141,7 +137,10 @@ router.get("/", async (req: Request, res: Response) => {
       });
     }
 
-    console.info("/places fetching category data", { query: trimmedQuery, placeId });
+    console.info("/places fetching category data", {
+      query: trimmedQuery,
+      placeId,
+    });
     const categoryResults = await Promise.all(
       CATEGORY_CONFIG.map(async ({ key, categories }) => {
         const placesRes = await fetch(

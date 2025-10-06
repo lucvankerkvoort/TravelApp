@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --exec ts-node index.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js"
+    "start": "NODE_PATH=../server/node_modules node ../dist/server/index.js"
   },
   "keywords": [],
   "author": "",

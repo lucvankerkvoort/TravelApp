@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
+    "outDir": "../dist",
     "rootDir": "../",
     "module": "commonjs",
     "moduleResolution": "node",
@@ -10,6 +10,9 @@
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "include": ["**/*.ts", "../shared/**/*.ts"],
+  "alias": {
+    "@shared/*": ["../shared/*"]
+  },
+  "include": ["./**/*.ts", "../shared/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

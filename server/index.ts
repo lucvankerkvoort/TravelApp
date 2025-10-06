@@ -11,7 +11,7 @@ import routeRouter from "./routes/route";
 
 dotenv.config({ path: path.resolve(process.cwd(), "../.env") });
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = parseInt(process.env.PORT || "4000", 10);
 
 app.use(cors());
 app.use(express.json());
@@ -22,7 +22,6 @@ app.use("/api/marker", markerRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/route", routeRouter);
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });

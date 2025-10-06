@@ -181,8 +181,16 @@ const FloatingAssistant = () => {
           };
 
           if (data.tool === "plan_route" && data.data) {
-            const coords = Array.isArray(data.data.coordinates)
-              ? data.data.coordinates
+            const result = data.data as {
+              coordinates: Array<{ lat: number; lng: number }>;
+              distanceMeters: number;
+              durationSeconds: number;
+              mode: "driving" | "walking" | "cycling";
+              stops?: Array<{ lat: number; lng: number; label?: string | null }>;
+            };
+
+            const coords = Array.isArray(result.coordinates)
+              ? result.coordinates
               : [];
 
             if (coords.length) {
@@ -191,11 +199,11 @@ const FloatingAssistant = () => {
                   lat: point.lat,
                   lng: point.lng,
                 })),
-                distanceMeters: data.data.distanceMeters,
-                durationSeconds: data.data.durationSeconds,
+                distanceMeters: result.distanceMeters,
+                durationSeconds: result.durationSeconds,
               };
-              const stops = Array.isArray(data.data.stops)
-                ? data.data.stops
+              const stops = Array.isArray(result.stops)
+                ? result.stops
                     .map((stop) => ({
                       lat: stop.lat,
                       lng: stop.lng,

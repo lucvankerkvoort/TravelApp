@@ -6,6 +6,8 @@ import path from "path";
 import placesRouter from "./routes/places";
 import markerRouter from "./routes/marker";
 import chatRouter from "./routes/chat";
+import authRouter from "./routes/auth";
+import routeRouter from "./routes/route";
 
 dotenv.config({ path: path.resolve(process.cwd(), "../.env") });
 const app = express();
@@ -18,6 +20,8 @@ app.use(express.json());
 app.use("/api/places", placesRouter);
 app.use("/api/marker", markerRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/route", routeRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

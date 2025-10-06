@@ -15,6 +15,8 @@ import MinimizeIcon from "@mui/icons-material/Minimize";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiUrl } from "@/lib/api";
+import { useCityExplorer } from "@/context/CityExplorerContext";
+import type { RouteLeg } from "@/types/models";
 
 const ASSISTANT_STORAGE_KEY = "city-explorer-assistant-conversation";
 
@@ -34,6 +36,7 @@ const defaultMessages: ChatMessage[] = [
 ];
 
 const FloatingAssistant = () => {
+  const { applyRouteLeg, focusCoords } = useCityExplorer();
   const [isOpen, setIsOpen] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -162,6 +165,68 @@ const FloatingAssistant = () => {
         }
       });
 
+      es.addEventListener("tool-result", (event) => {
+        try {
+          const data = JSON.parse((event as MessageEvent).data) as {
+            tool?: string;
+            error?: string;
+            data?: {
+              coordinates: Array<{ lat: number; lng: number }>;
+              distanceMeters: number;
+              durationSeconds: number;
+              mode: "driving" | "walking" | "cycling";
+              start?: { lat: number; lng: number; label: string | null };
+              end?: { lat: number; lng: number; label: string | null };
+            };
+          };
+
+          if (data.tool === "plan_route" && data.data) {
+            const coords = Array.isArray(data.data.coordinates)
+              ? data.data.coordinates
+              : [];
+
+            if (coords.length) {
+              const routeLeg: RouteLeg = {
+                coordinates: coords.map((point) => ({
+                  lat: point.lat,
+                  lng: point.lng,
+                })),
+                distanceMeters: data.data.distanceMeters,
+                durationSeconds: data.data.durationSeconds,
+              };
+              const stops = Array.isArray(data.data.stops)
+                ? data.data.stops
+                    .map((stop) => ({
+                      lat: stop.lat,
+                      lng: stop.lng,
+                      label: stop.label ?? null,
+                    }))
+                    .filter(
+                      (stop) =>
+                        Number.isFinite(stop.lat) && Number.isFinite(stop.lng)
+                    )
+                : [];
+
+              applyRouteLeg(routeLeg, stops);
+
+              const focusTarget = stops[0] ?? routeLeg.coordinates[0];
+              if (focusTarget) {
+                focusCoords(focusTarget, {
+                  height: 1800,
+                  speed: 1.4,
+                });
+              }
+            }
+          }
+
+          if (data.error) {
+            console.warn("Assistant tool error", data.error);
+          }
+        } catch (err) {
+          console.warn("Failed to parse tool-result", err);
+        }
+      });
+
       es.addEventListener("done", () => {
         updateAssistantMessage(assistantContent);
         setIsStreaming(false);
@@ -188,7 +253,7 @@ const FloatingAssistant = () => {
         eventSourceRef.current = null;
       });
     },
-    []
+    [applyRouteLeg, focusCoords]
   );
 
   const handleSend = async () => {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Viewer, Entity, Cesium3DTileset } from "resium";
 import {
+  Cartesian2,
   Cartesian3,
   Color,
   SampledPositionProperty,
@@ -8,10 +9,13 @@ import {
   IonResource,
   Ion,
   VerticalOrigin,
+  HorizontalOrigin,
   HeightReference,
 } from "cesium";
-import { useCityExplorer } from "@/context/CityExplorerContext";
-import type { GeoapifyFeature } from "@/types/geoapify";
+import {
+  useCityExplorer,
+  type CityLandmark,
+} from "@/context/CityExplorerContext";
 
 export default function GlobeViewer() {
   const {
@@ -22,6 +26,7 @@ export default function GlobeViewer() {
     selectedLandmarkId,
     cameraOptions,
     route,
+    routeStops,
     focusCoords,
   } = useCityExplorer();
 
@@ -111,7 +116,14 @@ export default function GlobeViewer() {
     return sp;
   }, [route]);
 
-  const featurePosition = (feature: GeoapifyFeature) => {
+  const routePolylinePositions = useMemo(() => {
+    if (!route || !route.coordinates.length) return null;
+    return route.coordinates.map((c) =>
+      Cartesian3.fromDegrees(c.lng, c.lat, 20)
+    );
+  }, [route]);
+
+  const featurePosition = (feature: CityLandmark) => {
     const coords = feature.geometry?.coordinates;
     if (coords && coords.length === 2) {
       const [lng, lat] = coords;
@@ -123,13 +135,13 @@ export default function GlobeViewer() {
     );
   };
 
-  const featureName = (feature: GeoapifyFeature) =>
+  const featureName = (feature: CityLandmark) =>
     feature.properties.name ??
     feature.properties.address_line1 ??
     feature.properties.formatted ??
     "Unnamed place";
 
-  const featureDescription = (feature: GeoapifyFeature) => {
+  const featureDescription = (feature: CityLandmark) => {
     const { categories, formatted, address_line2, city } = feature.properties;
     if (categories?.length) {
       const raw = categories[0];
@@ -138,7 +150,7 @@ export default function GlobeViewer() {
     return address_line2 ?? formatted ?? city ?? "Landmark";
   };
 
-  const featureLatLng = (feature: GeoapifyFeature) => {
+  const featureLatLng = (feature: CityLandmark) => {
     const coords = feature.geometry?.coordinates;
     if (coords && coords.length === 2) {
       const [lng, lat] = coords;
@@ -201,7 +213,7 @@ export default function GlobeViewer() {
         );
       })}
 
-      {routePosition && (
+      {routePosition && routePolylinePositions && (
         <Entity
           name="Route"
           position={routePosition}
@@ -212,8 +224,45 @@ export default function GlobeViewer() {
             width: 3,
             material: Color.CYAN,
           }}
+          polyline={{
+            positions: routePolylinePositions,
+            width: 3,
+            material: Color.fromCssColorString("#38bdf8"),
+            clampToGround: true,
+          }}
         />
       )}
+
+      {routeStops.map((stop, idx) => (
+        <Entity
+          key={`route-stop-${idx}-${stop.lat}-${stop.lng}`}
+          name={stop.label ?? `Stop ${idx + 1}`}
+          position={Cartesian3.fromDegrees(stop.lng, stop.lat, 20)}
+          point={{
+            pixelSize: idx === 0 || idx === routeStops.length - 1 ? 14 : 10,
+            color:
+              idx === 0
+                ? Color.fromCssColorString("#34d399")
+                : idx === routeStops.length - 1
+                ? Color.fromCssColorString("#f97316")
+                : Color.fromCssColorString("#a855f7"),
+            outlineColor: Color.BLACK,
+            outlineWidth: 1.5,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          }}
+          label={{
+            text: stop.label ?? `Stop ${idx + 1}`,
+            fillColor: Color.WHITE,
+            showBackground: true,
+            backgroundColor: Color.fromCssColorString("rgba(2,6,23,0.7)"),
+            font: "14px 'Inter', sans-serif",
+            pixelOffset: new Cartesian2(0, -24),
+            horizontalOrigin: HorizontalOrigin.CENTER,
+            verticalOrigin: VerticalOrigin.BOTTOM,
+            scale: idx === 0 || idx === routeStops.length - 1 ? 1.1 : 1,
+          }}
+        />
+      ))}
     </Viewer>
   );
 }

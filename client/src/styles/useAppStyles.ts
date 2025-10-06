@@ -1,12 +1,18 @@
 import { makeStyles } from "tss-react/mui";
 
+export const PRIMARY_DARK = "#001BB7";
+export const PRIMARY_BRIGHT = "#0046FF";
+export const ACCENT = "#FF8040";
+export const LIGHT = "#E9E9E9";
+
 export const useAppStyles = makeStyles()(() => ({
   appShell: {
     width: "100vw",
     height: "100vh",
     margin: 0,
-    background: "radial-gradient(circle at 20% 20%, #0e1a2b, #02040a 70%)",
-    color: "#f8fafc",
+    background:
+      "radial-gradient(circle at 20% 25%, rgba(0, 27, 183, 0.92) 0%, rgba(0, 70, 255, 0.85) 55%, rgba(0, 27, 183, 0.98) 100%)",
+    color: LIGHT,
     fontFamily:
       "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
@@ -31,61 +37,62 @@ export const useAppStyles = makeStyles()(() => ({
     gap: "0.5rem",
     alignItems: "center",
     background:
-      "linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(45, 55, 72, 0.55))",
+      "linear-gradient(135deg, rgba(0, 27, 183, 0.85), rgba(0, 70, 255, 0.75))",
     borderRadius: "1rem",
-    padding: "0.85rem",
-    boxShadow: "0 18px 38px rgba(8, 47, 73, 0.45)",
+    padding: "0.9rem",
+    boxShadow: "0 20px 42px rgba(0, 27, 183, 0.45)",
     backdropFilter: "blur(18px)",
-    border: "1px solid rgba(148, 163, 184, 0.28)",
+    border: "1px solid rgba(233, 233, 233, 0.22)",
   },
   searchInput: {
     flex: 1,
     "& .MuiOutlinedInput-root": {
       borderRadius: "0.85rem",
-      backgroundColor: "rgba(15, 23, 42, 0.55)",
+      backgroundColor: "rgba(0, 27, 183, 0.3)",
       transition:
         "border-color 160ms ease, box-shadow 160ms ease, background 160ms ease",
-      color: "#f8fafc",
+      color: LIGHT,
       "& fieldset": {
-        borderColor: "transparent",
+        borderColor: "rgba(233, 233, 233, 0.2)",
       },
       "&:hover fieldset": {
-        borderColor: "rgba(148, 163, 184, 0.35)",
+        borderColor: "rgba(233, 233, 233, 0.45)",
       },
       "&.Mui-focused": {
-        backgroundColor: "rgba(15, 23, 42, 0.72)",
-        boxShadow: "0 12px 28px rgba(14, 165, 233, 0.3)",
+        backgroundColor: "rgba(0, 27, 183, 0.55)",
+        boxShadow: "0 12px 30px rgba(0, 70, 255, 0.35)",
       },
       "&.Mui-focused fieldset": {
-        borderColor: "rgba(125, 211, 252, 0.65)",
+        borderColor: "rgba(233, 233, 233, 0.65)",
       },
     },
     "& .MuiOutlinedInput-input": {
       padding: "0.65rem 1rem",
       fontSize: "0.98rem",
-      color: "#f8fafc",
+      color: LIGHT,
       "&::placeholder": {
-        color: "rgba(203, 213, 225, 0.65)",
+        color: "rgba(233, 233, 233, 0.6)",
         opacity: 1,
       },
     },
   },
   searchButton: {
-    padding: "0.65rem 1.2rem",
+    padding: "0.68rem 1.25rem",
     fontSize: "0.98rem",
     borderRadius: "0.85rem",
-    background: "linear-gradient(135deg, #8b5cf6, #3b82f6)",
-    color: "#0b1120",
+    background:
+      "linear-gradient(135deg, rgba(255, 128, 64, 1), rgba(233, 233, 233, 0.85))",
+    color: PRIMARY_DARK,
     fontWeight: 600,
     cursor: "pointer",
     textTransform: "none",
-    boxShadow: "0 18px 30px rgba(88, 101, 242, 0.35)",
+    boxShadow: "0 20px 34px rgba(255, 128, 64, 0.35)",
     transition:
       "transform 160ms ease, filter 160ms ease, box-shadow 160ms ease",
     "&:hover": {
       transform: "translateY(-2px)",
-      filter: "brightness(1.08)",
-      boxShadow: "0 22px 36px rgba(99, 102, 241, 0.45)",
+      filter: "brightness(1.05)",
+      boxShadow: "0 24px 40px rgba(255, 128, 64, 0.45)",
     },
     "&.Mui-disabled": {
       cursor: "not-allowed",
@@ -96,7 +103,7 @@ export const useAppStyles = makeStyles()(() => ({
   feedback: {
     margin: 0,
     marginLeft: "0.5rem",
-    color: "#a5b4fc",
+    color: "rgba(233, 233, 233, 0.7)",
     fontSize: "0.85rem",
   },
   sidebarCard: {
@@ -104,11 +111,11 @@ export const useAppStyles = makeStyles()(() => ({
     flexDirection: "column",
     gap: "1rem",
     background:
-      "linear-gradient(160deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.72))",
+      "linear-gradient(155deg, rgba(0, 27, 183, 0.9), rgba(0, 70, 255, 0.78))",
     borderRadius: "1.25rem",
     padding: "1.35rem",
-    boxShadow: "0 26px 50px rgba(2, 6, 23, 0.55)",
-    border: "1px solid rgba(148, 163, 184, 0.2)",
+    boxShadow: "0 32px 60px rgba(0, 27, 183, 0.48)",
+    border: "1px solid rgba(233, 233, 233, 0.18)",
     maxHeight: "65vh",
     overflow: "hidden",
   },
@@ -121,17 +128,17 @@ export const useAppStyles = makeStyles()(() => ({
     margin: 0,
     fontSize: "1.5rem",
     fontWeight: 700,
-    color: "#c4cfff",
+    color: LIGHT,
   },
   citySubtitle: {
     margin: 0,
     fontSize: "0.95rem",
-    color: "#cbd5f5",
+    color: "rgba(233, 233, 233, 0.72)",
   },
   cityBlurb: {
     margin: 0,
     fontSize: "0.95rem",
-    color: "#e2e8f0",
+    color: "rgba(233, 233, 233, 0.78)",
     lineHeight: 1.5,
   },
   section: {
@@ -145,7 +152,7 @@ export const useAppStyles = makeStyles()(() => ({
     margin: 0,
     fontSize: "0.95rem",
     fontWeight: 700,
-    color: "#c4cfff",
+    color: "rgba(233, 233, 233, 0.75)",
     letterSpacing: "0.08em",
     textTransform: "uppercase",
   },
@@ -153,7 +160,7 @@ export const useAppStyles = makeStyles()(() => ({
     margin: "0 0 0.4rem",
     fontSize: "0.9rem",
     fontWeight: 600,
-    color: "#f8fafc",
+    color: LIGHT,
   },
   listColumn: {
     display: "flex",
@@ -169,7 +176,7 @@ export const useAppStyles = makeStyles()(() => ({
       width: "6px",
     },
     "&::-webkit-scrollbar-thumb": {
-      backgroundColor: "rgba(148, 163, 184, 0.35)",
+      backgroundColor: "rgba(233, 233, 233, 0.35)",
       borderRadius: "999px",
     },
   },
@@ -182,39 +189,43 @@ export const useAppStyles = makeStyles()(() => ({
     borderRadius: "1rem",
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: "rgba(148, 163, 184, 0.18)",
-    backgroundColor: "rgba(15, 23, 42, 0.55)",
-    color: "#f8fafc",
+    borderColor: "rgba(233, 233, 233, 0.2)",
+    background:
+      "linear-gradient(140deg, rgba(0, 27, 183, 0.42), rgba(0, 70, 255, 0.35))",
+    color: LIGHT,
     cursor: "pointer",
     textTransform: "none",
     transition:
       "border-color 150ms ease, background 200ms ease, transform 160ms ease",
     outline: "none",
     "&:hover": {
-      borderColor: "rgba(125, 211, 252, 0.5)",
-      backgroundColor: "rgba(15, 23, 42, 0.7)",
+      borderColor: "rgba(233, 233, 233, 0.45)",
+      background:
+        "linear-gradient(140deg, rgba(0, 27, 183, 0.65), rgba(0, 70, 255, 0.5))",
       transform: "translateY(-1px)",
     },
     "&.Mui-focusVisible": {
-      borderColor: "rgba(125, 211, 252, 0.85)",
-      boxShadow: "0 0 0 2px rgba(56, 189, 248, 0.25)",
+      borderColor: "rgba(233, 233, 233, 0.75)",
+      boxShadow: "0 0 0 2px rgba(0, 70, 255, 0.35)",
     },
   },
   listButtonActive: {
-    borderColor: "rgba(125, 211, 252, 0.85)",
+    borderColor: "rgba(255, 128, 64, 0.9)",
     background:
-      "linear-gradient(135deg, rgba(56, 189, 248, 0.55), rgba(129, 140, 248, 0.38))",
+      "linear-gradient(135deg, rgba(255, 128, 64, 0.6), rgba(255, 128, 64, 0.35))",
     transform: "translateY(-1.5px) scale(1.02)",
-    boxShadow: "0 16px 30px rgba(56, 189, 248, 0.25)",
+    boxShadow: "0 16px 30px rgba(255, 128, 64, 0.28)",
   },
   listButtonTitle: {
     fontSize: "0.98rem",
     fontWeight: 700,
+    color: LIGHT,
     letterSpacing: "0.01em",
+    padding: "16px",
   },
   listButtonSubtitle: {
     fontSize: "0.82rem",
-    color: "#cbd5f5",
+    color: "rgba(233, 233, 233, 0.7)",
     letterSpacing: "0.01em",
   },
   bulletList: {
@@ -231,16 +242,16 @@ export const useAppStyles = makeStyles()(() => ({
     gap: "0.2rem",
     padding: "0.6rem 0.7rem",
     borderRadius: "0.6rem",
-    backgroundColor: "rgba(30, 41, 59, 0.7)",
+    backgroundColor: "rgba(0, 27, 183, 0.35)",
   },
   bulletMeta: {
     fontSize: "0.8rem",
-    color: "#cbd5f5",
+    color: "rgba(233, 233, 233, 0.7)",
   },
   listItemPrimary: {
     fontSize: "0.95rem",
     fontWeight: 600,
-    color: "#f8fafc",
+    color: LIGHT,
     display: "block",
   },
 }));

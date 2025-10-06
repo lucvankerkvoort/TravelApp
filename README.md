@@ -6,6 +6,7 @@ City Explorer is a full-stack TypeScript project that renders a Cesium-powered g
 - **Interactive 3D globe** – Fly between destinations and highlight landmarks with animated Cesium entities.
 - **Geoapify integration** – Radius and place searches backed by Zod validation and cached per user session.
 - **Floating AI assistant** – Minimal glassmorphism chat window that streams GPT responses over Server-Sent Events.
+- **Firebase ready** – Client initializes Firebase (Auth + Firestore + optional Analytics) for email/password, Google, and Apple sign-in, with server-side admin scaffolding.
 - **Redis caching** – Landmark results and chat conversations cached for rapid rehydration.
 - **Modern UI** – Gen Z-inspired sidebar, neon accents, and adaptive glass panels tied together with Material UI + TSS.
 
@@ -45,6 +46,16 @@ REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 GEOAPIFY_KEY=...
 VITE_CESIUM_ION_TOKEN=...
+VITE_API_BASE=
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_MEASUREMENT_ID=...
+FIREBASE_PROJECT_ID=...
+FIREBASE_SERVICE_ACCOUNT_JSON= # optional JSON string for Firebase Admin
 ```
 
 ```
@@ -83,6 +94,13 @@ pnpm --dir server lint   # if you add a lint script in the server
 - Landmark fetches (`/api/places`) and chat session handshakes are cached in Redis.
 - Conversations are stored under `chat:conversation:<id>` for 1 hour.
 - Temporary SSE sessions live under `chat:session:<sessionId>` for 5 minutes.
+
+## Firebase integration
+- `client/src/lib/firebase.ts` bootstraps Firebase (Auth, Firestore, optional Analytics) with values provided via `VITE_FIREBASE_*`.
+- `client/src/context/AuthContext.tsx` exposes hooks for email/password, Google, and Apple sign-in; wrap components with `<AuthProvider>` to access `useAuth()`.
+- `server/firebase.ts` initializes the Admin SDK using `FIREBASE_SERVICE_ACCOUNT_JSON` (a JSON stringified service account) or application default credentials.
+- `server/routes/auth.ts` verifies ID tokens server-side so protected routes can trust Firebase-authenticated requests.
+- Extend from here: persist user landmarks to Firestore via the exported helpers or call Admin APIs from Express routes for shared data.
 
 ## Floating assistant workflow
 1. User message is posted to `/api/chat`. The server trims the last 20 conversation turns, stores a session in Redis, and returns a `sessionId`.

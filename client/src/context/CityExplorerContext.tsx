@@ -37,6 +37,40 @@ type FocusOptions = Partial<CameraOptions> & {
   landmarkId?: string | null;
 };
 
+export type CategoryKey = "highlights" | "eatAndDrink" | "activities" | "stays";
+
+export type CityLandmark = GeoapifyFeature & { __category: CategoryKey };
+
+type RouteStop = {
+  lat: number;
+  lng: number;
+  label?: string | null;
+};
+
+export const CATEGORY_CONFIG: Array<{ key: CategoryKey; label: string }> = [
+  { key: "highlights", label: "Highlights" },
+  { key: "eatAndDrink", label: "Eat & Drink" },
+  { key: "activities", label: "Activities" },
+  { key: "stays", label: "Places to Stay" },
+];
+
+export const CATEGORY_THEME: Record<
+  CategoryKey,
+  { icon: string; color: string }
+> = {
+  highlights: { icon: "star", color: "#0046FF" },
+  eatAndDrink: { icon: "utensils", color: "#73C8D2" },
+  activities: { icon: "running", color: "#F5F1DC" },
+  stays: { icon: "bed", color: "#FF9013" },
+};
+
+const createCategoryBuckets = (): Record<CategoryKey, CityLandmark[]> => ({
+  highlights: [],
+  eatAndDrink: [],
+  activities: [],
+  stays: [],
+});
+
 type Ctx = {
   viewerRef: React.RefObject<CesiumComponentRef<CesiumViewer> | null>;
 
@@ -45,7 +79,8 @@ type Ctx = {
   focusCoords: (coords: LatLng, opts?: FocusOptions) => void;
 
   // data
-  landmarks: GeoapifyFeature[];
+  landmarks: CityLandmark[];
+  landmarksByCategory: Record<CategoryKey, CityLandmark[]>;
   markerStyles: Record<string, MarkerStyle>;
   landmarksLoading: boolean;
   selectedLandmarkId: string | null;
@@ -61,6 +96,8 @@ type Ctx = {
     end: LatLng,
     mode?: "driving" | "walking" | "cycling"
   ) => Promise<void>;
+  applyRouteLeg: (route: RouteLeg, stops?: RouteStop[]) => void;
+  routeStops: RouteStop[];
   clearRoute: () => void;
 
   // search
@@ -91,7 +128,10 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
   const geocoderServiceRef = useRef<IonGeocoderService | null>(null);
 
   const [activeCoords, setActiveCoords] = useState<LatLng | null>(null);
-  const [landmarks, setLandmarks] = useState<GeoapifyFeature[]>([]);
+  const [landmarks, setLandmarks] = useState<CityLandmark[]>([]);
+  const [landmarksByCategory, setLandmarksByCategory] = useState<
+    Record<CategoryKey, CityLandmark[]>
+  >(createCategoryBuckets);
   const [markerStyles, setMarkerStyles] = useState<Record<string, MarkerStyle>>(
     {}
   );
@@ -107,6 +147,7 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
   });
   const [guides, setGuides] = useState<Guide[]>([]);
   const [route, setRoute] = useState<RouteLeg | null>(null);
+  const [routeStops, setRouteStops] = useState<RouteStop[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
@@ -146,6 +187,7 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
     const trimmed = query.trim();
     if (!trimmed) {
       setLandmarks([]);
+      setLandmarksByCategory(createCategoryBuckets());
       setMarkerStyles({});
       setLandmarksLoading(false);
       setSelectedLandmarkId(null);
@@ -160,53 +202,56 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
         apiUrl(`/api/places?query=${encodeURIComponent(trimmed)}`)
       );
       if (!res.ok) throw new Error("Failed to load landmarks");
-      const payload = await res.json();
-      const parsed = GeoapifyFeatureSchema.array().parse(payload);
+      const payload = (await res.json()) as Partial<
+        Record<CategoryKey, unknown>
+      >;
 
+      const flattened: CityLandmark[] = [];
+      const grouped = createCategoryBuckets();
       const styles: Record<string, MarkerStyle> = {};
       setSelectedLandmarkId(null);
 
-      const themeMap: Record<string, { icon: string; color: string }> = {
-        tourism: { icon: "binoculars", color: "#29B6F6" },
-        architecture: { icon: "landmark", color: "#8E24AA" },
-        religion: { icon: "church", color: "#7E57C2" },
-        catering: { icon: "utensils", color: "#FF7043" },
-        shopping: { icon: "shopping-bag", color: "#AB47BC" },
-        accommodation: { icon: "bed", color: "#26A69A" },
-        entertainment: { icon: "theater-masks", color: "#FFCA28" },
-        natural: { icon: "tree", color: "#66BB6A" },
-        sport: { icon: "basketball-ball", color: "#42A5F5" },
-        culture: { icon: "palette", color: "#EC407A" },
-        historic: { icon: "monument", color: "#FF8A65" },
-      };
+      CATEGORY_CONFIG.forEach(({ key }) => {
+        const parsedList = GeoapifyFeatureSchema.array().safeParse(
+          payload[key]
+        );
+        if (!parsedList.success) {
+          return;
+        }
 
-      parsed.forEach((feature) => {
-        const categoriesRaw = feature.properties.categories ?? "";
-        const categories =
-          typeof categoriesRaw === "string" ? categoriesRaw.split(",") : [];
-        const firstCategory = categories[0]?.split(".")[0] ?? "tourism";
-        const fallback = { icon: "map-marker-alt", color: "#FF5722" };
-        const { icon, color } = themeMap[firstCategory] ?? fallback;
+        parsedList.data.forEach((feature) => {
+          const themed = CATEGORY_THEME[key];
+          const placeId = feature.properties.place_id;
+          if (!placeId) {
+            return;
+          }
 
-        const params = new URLSearchParams({
-          icon,
-          color,
-          type: "awesome",
-          iconType: "awesome",
-          size: "large",
+          const params = new URLSearchParams({
+            icon: themed.icon,
+            color: themed.color,
+            type: "awesome",
+            iconType: "awesome",
+            size: "large",
+          });
+
+          styles[placeId] = {
+            icon: themed.icon,
+            color: themed.color,
+            iconUrl: `/api/marker?${params.toString()}`,
+          };
+
+          const enriched = { ...feature, __category: key };
+          grouped[key].push(enriched);
+          flattened.push(enriched);
         });
-
-        styles[feature.properties.place_id] = {
-          icon,
-          color,
-          iconUrl: `/api/marker?${params.toString()}`,
-        };
       });
 
-      setLandmarks(parsed);
       setMarkerStyles(styles);
+      setLandmarks(flattened);
+      setLandmarksByCategory(grouped);
     } catch (e: any) {
       setError(e.message || "Landmarks failed");
+      setLandmarksByCategory(createCategoryBuckets());
     } finally {
       setLoading(false);
       setLandmarksLoading(false);
@@ -240,24 +285,49 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
-          apiUrl(
-            `/api/route?start=${start.lat},${start.lng}&end=${end.lat},${end.lng}&mode=${mode}`
-          )
-        );
-        if (!res.ok) throw new Error("Failed to plan route");
-        const data: RouteLeg = await res.json();
-        setRoute(data);
-      } catch (e: any) {
-        setError(e.message || "Route failed");
-      } finally {
-        setLoading(false);
-      }
+      const res = await fetch(
+        apiUrl(
+          `/api/route?start=${start.lat},${start.lng}&end=${end.lat},${end.lng}&mode=${mode}`
+        )
+      );
+      if (!res.ok) throw new Error("Failed to plan route");
+      const data: RouteLeg = await res.json();
+      setRoute(data);
+      setRouteStops([
+        { lat: start.lat, lng: start.lng, label: "Start" },
+        { lat: end.lat, lng: end.lng, label: "Finish" },
+      ]);
+    } catch (e: any) {
+      setError(e.message || "Route failed");
+    } finally {
+      setLoading(false);
+    }
     },
     []
   );
 
-  const clearRoute = useCallback(() => setRoute(null), []);
+  const clearRoute = useCallback(() => {
+    setRoute(null);
+    setRouteStops([]);
+  }, []);
+
+  const applyRouteLeg = useCallback(
+    (leg: RouteLeg, stops?: RouteStop[]) => {
+      if (!leg?.coordinates?.length) {
+        console.warn("applyRouteLeg received empty route", leg);
+        return;
+      }
+      console.info("applyRouteLeg setting route", {
+        points: leg.coordinates.length,
+        distance: leg.distanceMeters,
+        duration: leg.durationSeconds,
+        stops: stops?.length ?? 0,
+      });
+      setRoute(leg);
+      setRouteStops(stops ?? []);
+    },
+    []
+  );
 
   const handleSearchSubmit = useCallback(
     async (overrideQuery?: string) => {
@@ -378,6 +448,7 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
       activeCoords,
       focusCoords,
       landmarks,
+      landmarksByCategory,
       markerStyles,
       landmarksLoading,
       selectedLandmarkId,
@@ -386,7 +457,9 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
       loadLandmarks,
       loadGuides,
       route,
+      routeStops,
       planRoute,
+      applyRouteLeg,
       clearRoute,
       searchQuery,
       setSearchQuery,
@@ -401,6 +474,7 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
     [
       activeCoords,
       landmarks,
+      landmarksByCategory,
       markerStyles,
       landmarksLoading,
       selectedLandmarkId,
@@ -409,7 +483,9 @@ export function CityExplorerProvider({ children }: { children: ReactNode }) {
       loadLandmarks,
       loadGuides,
       route,
+      routeStops,
       planRoute,
+      applyRouteLeg,
       clearRoute,
       searchQuery,
       isSearching,
